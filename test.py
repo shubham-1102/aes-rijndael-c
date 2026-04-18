@@ -66,3 +66,30 @@ def test_sub_bytes():
     print(f"sub_bytes: {passed}/3 passed\n")
 
 test_sub_bytes()
+
+
+INV_SBOX = [0] * 256
+for i, v in enumerate(SBOX):
+    INV_SBOX[v] = i
+
+def test_invert_sub_bytes():
+    print("Testing invert_sub_bytes...")
+    import random
+    passed = 0
+    for i in range(3):
+        data = bytes([random.randint(0,255) for _ in range(16)])
+        expected = bytes([INV_SBOX[b] for b in data])
+        buf = ctypes.create_string_buffer(data, 16)
+        lib.invert_sub_bytes(buf, AES_BLOCK_128)
+        result = bytes(buf)
+        if result == expected:
+            print(f"  Test {i+1}: PASSED ✓")
+            passed += 1
+        else:
+            print(f"  Test {i+1}: FAILED ✗")
+            print(f"    Input:    {list(data)}")
+            print(f"    Got:      {list(result)}")
+            print(f"    Expected: {list(expected)}")
+    print(f"invert_sub_bytes: {passed}/3 passed\n")
+
+test_invert_sub_bytes()
