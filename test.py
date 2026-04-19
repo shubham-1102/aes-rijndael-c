@@ -293,3 +293,29 @@ def test_expand_key():
     print(f"expand_key: {passed}/3 passed\n")
 
 test_expand_key()
+
+lib.aes_encrypt_block.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_int]
+lib.aes_encrypt_block.restype  = ctypes.c_void_p
+
+def test_encrypt():
+    print("Testing aes_encrypt_block...")
+    import random
+    passed = 0
+    for i in range(3):
+        plain = bytes([random.randint(0,255) for _ in range(16)])
+        key   = bytes([random.randint(0,255) for _ in range(16)])
+        pb = ctypes.create_string_buffer(plain, 16)
+        kb = ctypes.create_string_buffer(key, 16)
+        ptr = lib.aes_encrypt_block(pb, kb, AES_BLOCK_128)
+        result = bytes(ctypes.string_at(ptr, 16))
+        # Ciphertext must differ from plaintext
+        if result != plain and len(result) == 16:
+            print(f"  Test {i+1}: PASSED ✓")
+            passed += 1
+        else:
+            print(f"  Test {i+1}: FAILED ✗")
+            print(f"    Plaintext:  {list(plain)}")
+            print(f"    Ciphertext: {list(result)}")
+    print(f"aes_encrypt_block: {passed}/3 passed\n")
+
+test_encrypt()
