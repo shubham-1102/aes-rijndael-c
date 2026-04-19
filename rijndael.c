@@ -254,8 +254,53 @@ void add_round_key(unsigned char *block,
  * vector, containing the 11 round keys one after the other
  */
 unsigned char *expand_key(unsigned char *cipher_key, aes_block_size_t block_size) {
-  // TODO: Implement me!
-  return 0;
+  int cols, rounds, Nk;
+    switch (block_size) {
+        case AES_BLOCK_128: cols = 4;  rounds = 10; break;
+        case AES_BLOCK_256: cols = 8;  rounds = 14; break;
+        case AES_BLOCK_512: cols = 16; rounds = 22; break;
+        default:            cols = 4;  rounds = 10; break;
+    }
+    Nk = cols;
+    int total_words = 4 * (rounds + 1);
+    int key_bytes   = total_words * 4;
+
+    unsigned char *expanded = (unsigned char *)malloc(key_bytes);
+
+    /* First Nk words come directly from the original key */
+    memcpy(expanded, cipher_key, block_size_to_bytes(block_size));
+
+    /* Generate remaining words */
+    for (int i = Nk; i < total_words; i++) {
+        unsigned char temp[4];
+        temp[0] = expanded[(i-1)*4+0];
+        temp[1] = expanded[(i-1)*4+1];
+        temp[2] = expanded[(i-1)*4+2];
+        temp[3] = expanded[(i-1)*4+3];
+
+        if (i % Nk == 0) {
+            /* RotWord: rotate left by 1 */
+            unsigned char t = temp[0];
+            temp[0] = temp[1];
+            temp[1] = temp[2];
+            temp[2] = temp[3];
+            temp[3] = t;
+            /* SubWord: apply S-Box */
+            temp[0] = sbox[temp[0]];
+            temp[1] = sbox[temp[1]];
+            temp[2] = sbox[temp[2]];
+            temp[3] = sbox[temp[3]];
+            /* XOR with round constant */
+            temp[0] ^= rcon[i / Nk];
+        }
+
+        /* w[i] = w[i-Nk] XOR temp */
+        expanded[i*4+0] = expanded[(i-Nk)*4+0] ^ temp[0];
+        expanded[i*4+1] = expanded[(i-Nk)*4+1] ^ temp[1];
+        expanded[i*4+2] = expanded[(i-Nk)*4+2] ^ temp[2];
+        expanded[i*4+3] = expanded[(i-Nk)*4+3] ^ temp[3];
+    }
+    return expanded;
 }
 
 /*

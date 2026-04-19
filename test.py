@@ -269,3 +269,27 @@ def test_add_round_key():
     print(f"add_round_key: {passed}/3 passed\n")
 
 test_add_round_key()
+
+lib.expand_key.argtypes = [ctypes.c_char_p, ctypes.c_int]
+lib.expand_key.restype  = ctypes.c_void_p
+
+def test_expand_key():
+    print("Testing expand_key...")
+    import random
+    passed = 0
+    for i in range(3):
+        key = bytes([random.randint(0,255) for _ in range(16)])
+        ptr = lib.expand_key(ctypes.create_string_buffer(key, 16), AES_BLOCK_128)
+        # For 128-bit: expanded key must be 176 bytes (11 round keys x 16 bytes)
+        result = bytes(ctypes.string_at(ptr, 176))
+        # First 16 bytes must match original key
+        if result[:16] == key and len(result) == 176:
+            print(f"  Test {i+1}: PASSED ✓")
+            passed += 1
+        else:
+            print(f"  Test {i+1}: FAILED ✗")
+            print(f"    First 16 bytes match: {result[:16] == key}")
+            print(f"    Length: {len(result)} (expected 176)")
+    print(f"expand_key: {passed}/3 passed\n")
+
+test_expand_key()
