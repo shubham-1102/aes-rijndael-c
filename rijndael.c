@@ -350,8 +350,38 @@ unsigned char *aes_encrypt_block(unsigned char *plaintext,
 unsigned char *aes_decrypt_block(unsigned char *ciphertext,
                                  unsigned char *key,
                                  aes_block_size_t block_size) {
-  // TODO: Implement me!
-  unsigned char *output =
-      (unsigned char *)malloc(sizeof(unsigned char) * block_size_to_bytes(block_size));
-  return output;
+  size_t bytes  = block_size_to_bytes(block_size);
+    int rounds    = 0;
+    switch (block_size) {
+        case AES_BLOCK_128: rounds = 10; break;
+        case AES_BLOCK_256: rounds = 14; break;
+        case AES_BLOCK_512: rounds = 22; break;
+        default:            rounds = 10; break;
+    }
+
+    /* Allocate output and copy ciphertext into it */
+    unsigned char *output = (unsigned char *)malloc(bytes);
+    memcpy(output, ciphertext, bytes);
+
+    /* Generate all round keys */
+    unsigned char *round_keys = expand_key(key, block_size);
+
+    /* Initial step: AddRoundKey with LAST round key */
+    add_round_key(output, round_keys + rounds * bytes, block_size);
+
+    /* Reverse rounds from rounds-1 down to 1 */
+    for (int round = rounds - 1; round >= 1; round--) {
+        invert_shift_rows(output, block_size);
+        invert_sub_bytes(output, block_size);
+        add_round_key(output, round_keys + round * bytes, block_size);
+        invert_mix_columns(output, block_size);
+    }
+
+    /* Final: InvShiftRows, InvSubBytes, AddRoundKey with key 0 */
+    invert_shift_rows(output, block_size);
+    invert_sub_bytes(output, block_size);
+    add_round_key(output, round_keys, block_size);
+
+    free(round_keys);
+    return output;
 }

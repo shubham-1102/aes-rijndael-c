@@ -319,3 +319,35 @@ def test_encrypt():
     print(f"aes_encrypt_block: {passed}/3 passed\n")
 
 test_encrypt()
+
+lib.aes_decrypt_block.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_int]
+lib.aes_decrypt_block.restype  = ctypes.c_void_p
+
+def test_encrypt_decrypt():
+    print("Testing full encrypt -> decrypt round trip...")
+    import random
+    passed = 0
+    for i in range(3):
+        plain = bytes([random.randint(0,255) for _ in range(16)])
+        key   = bytes([random.randint(0,255) for _ in range(16)])
+        # Encrypt
+        pb  = ctypes.create_string_buffer(plain, 16)
+        kb  = ctypes.create_string_buffer(key, 16)
+        ptr = lib.aes_encrypt_block(pb, kb, AES_BLOCK_128)
+        cipher = bytes(ctypes.string_at(ptr, 16))
+        # Decrypt
+        cb   = ctypes.create_string_buffer(cipher, 16)
+        kb2  = ctypes.create_string_buffer(key, 16)
+        ptr2 = lib.aes_decrypt_block(cb, kb2, AES_BLOCK_128)
+        recovered = bytes(ctypes.string_at(ptr2, 16))
+        # Recovered must match original plaintext
+        if recovered == plain:
+            print(f"  Test {i+1}: PASSED ✓")
+            passed += 1
+        else:
+            print(f"  Test {i+1}: FAILED ✗")
+            print(f"    Original:  {list(plain)}")
+            print(f"    Recovered: {list(recovered)}")
+    print(f"encrypt->decrypt: {passed}/3 passed\n")
+
+test_encrypt_decrypt()
