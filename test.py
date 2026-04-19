@@ -240,3 +240,32 @@ def test_invert_mix_columns():
     print(f"invert_mix_columns: {passed}/3 passed\n")
 
 test_invert_mix_columns()
+
+
+lib.add_round_key.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_int]
+lib.add_round_key.restype  = None
+
+def test_add_round_key():
+    print("Testing add_round_key...")
+    import random
+    passed = 0
+    for i in range(3):
+        data = bytes([random.randint(0,255) for _ in range(16)])
+        key  = bytes([random.randint(0,255) for _ in range(16)])
+        # Expected: simply XOR each byte
+        expected = bytes([b ^ k for b, k in zip(data, key)])
+        buf = ctypes.create_string_buffer(data, 16)
+        lib.add_round_key(buf, key, AES_BLOCK_128)
+        result = bytes(buf)
+        if result == expected:
+            print(f"  Test {i+1}: PASSED ✓")
+            passed += 1
+        else:
+            print(f"  Test {i+1}: FAILED ✗")
+            print(f"    Input:    {list(data)}")
+            print(f"    Key:      {list(key)}")
+            print(f"    Got:      {list(result)}")
+            print(f"    Expected: {list(expected)}")
+    print(f"add_round_key: {passed}/3 passed\n")
+
+test_add_round_key()
