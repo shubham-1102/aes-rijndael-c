@@ -217,7 +217,23 @@ void invert_shift_rows(unsigned char *block, aes_block_size_t block_size) {
 }
 
 void invert_mix_columns(unsigned char *block, aes_block_size_t block_size) {
-  // TODO: Implement me!
+      int cols = 0;
+    switch (block_size) {
+        case AES_BLOCK_128: cols = 4;  break;
+        case AES_BLOCK_256: cols = 8;  break;
+        case AES_BLOCK_512: cols = 16; break;
+        default: cols = 4;
+    }
+    for (int col = 0; col < cols; col++) {
+        unsigned char s0 = block[0 * cols + col];
+        unsigned char s1 = block[1 * cols + col];
+        unsigned char s2 = block[2 * cols + col];
+        unsigned char s3 = block[3 * cols + col];
+        block[0*cols+col] = gmul(0x0e,s0)^gmul(0x0b,s1)^gmul(0x0d,s2)^gmul(0x09,s3);
+        block[1*cols+col] = gmul(0x09,s0)^gmul(0x0e,s1)^gmul(0x0b,s2)^gmul(0x0d,s3);
+        block[2*cols+col] = gmul(0x0d,s0)^gmul(0x09,s1)^gmul(0x0e,s2)^gmul(0x0b,s3);
+        block[3*cols+col] = gmul(0x0b,s0)^gmul(0x0d,s1)^gmul(0x09,s2)^gmul(0x0e,s3);
+    }
 }
 
 /*
