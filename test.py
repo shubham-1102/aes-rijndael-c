@@ -161,3 +161,48 @@ def test_invert_shift_rows():
     print(f"invert_shift_rows: {passed}/3 passed\n")
 
 test_invert_shift_rows()
+def gf_mul(a, b):
+    result = 0
+    for _ in range(8):
+        if b & 1: result ^= a
+        hi = a & 0x80
+        a = (a << 1) & 0xff
+        if hi: a ^= 0x1b
+        b >>= 1
+    return result
+
+def py_mix_columns(block, nb):
+    state = list(block)
+    for col in range(nb):
+        s0,s1,s2,s3 = state[0*nb+col],state[1*nb+col],state[2*nb+col],state[3*nb+col]
+        state[0*nb+col] = gf_mul(0x02,s0)^gf_mul(0x03,s1)^s2^s3
+        state[1*nb+col] = s0^gf_mul(0x02,s1)^gf_mul(0x03,s2)^s3
+        state[2*nb+col] = s0^s1^gf_mul(0x02,s2)^gf_mul(0x03,s3)
+        state[3*nb+col] = gf_mul(0x03,s0)^s1^s2^gf_mul(0x02,s3)
+    return bytes(state)
+
+lib.mix_columns.argtypes = [ctypes.c_char_p, ctypes.c_int]
+lib.mix_columns.restype  = None
+
+def test_mix_columns():
+    print("Testing mix_columns...")
+    import random
+    passed = 0
+    for i in range(3):
+        data = bytes([random.randint(0,255) for _ in range(16)])
+        expected = py_mix_columns(data, 4)
+        buf = ctypes.create_string_buffer(data, 16)
+        lib.mix_columns(buf, AES_BLOCK_128)
+        result = bytes(buf)
+        if result == expected:
+            print(f"  Test {i+1}: PASSED ✓")
+            passed += 1
+        else:
+            print(f"  Test {i+1}: FAILED ✗")
+            print(f"    Input:    {list(data)}")
+            print(f"    Got:      {list(result)}")
+            print(f"    Expected: {list(expected)}")
+    print(f"mix_columns: {passed}/3 passed\n")
+
+test_mix_columns()
+

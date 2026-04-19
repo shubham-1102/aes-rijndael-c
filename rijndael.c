@@ -157,8 +157,36 @@ void shift_rows(unsigned char *block, aes_block_size_t block_size) {
     }
 }
 
+static unsigned char gmul(unsigned char a, unsigned char b) {
+    unsigned char p = 0;
+    for (int i = 0; i < 8; i++) {
+        if (b & 1) p ^= a;
+        unsigned char hi = a & 0x80;
+        a <<= 1;
+        if (hi) a ^= 0x1b;
+        b >>= 1;
+    }
+    return p;
+}
+
 void mix_columns(unsigned char *block, aes_block_size_t block_size) {
-  // TODO: Implement me!
+      int cols = 0;
+    switch (block_size) {
+        case AES_BLOCK_128: cols = 4;  break;
+        case AES_BLOCK_256: cols = 8;  break;
+        case AES_BLOCK_512: cols = 16; break;
+        default: cols = 4;
+    }
+    for (int col = 0; col < cols; col++) {
+        unsigned char s0 = block[0 * cols + col];
+        unsigned char s1 = block[1 * cols + col];
+        unsigned char s2 = block[2 * cols + col];
+        unsigned char s3 = block[3 * cols + col];
+        block[0 * cols + col] = gmul(0x02,s0)^gmul(0x03,s1)^s2^s3;
+        block[1 * cols + col] = s0^gmul(0x02,s1)^gmul(0x03,s2)^s3;
+        block[2 * cols + col] = s0^s1^gmul(0x02,s2)^gmul(0x03,s3);
+        block[3 * cols + col] = gmul(0x03,s0)^s1^s2^gmul(0x02,s3);
+    }
 }
 
 /*
