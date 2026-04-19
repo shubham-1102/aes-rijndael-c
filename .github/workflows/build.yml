@@ -1,12 +1,23 @@
-name: Build the project
+name: Build and Test AES Implementation
+
 on: push
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Clone the repo
         uses: actions/checkout@v4
-      - name: Build the code
+
+      - name: Install dependencies
         run: |
-          sudo apt install -y build-essential python-is-python3
-          make
+          sudo apt install -y build-essential python3
+
+      - name: Build the code
+        run: make
+
+      - name: Run the main program
+        run: ./main
+
+      - name: Run unit tests
+        run: python3 test.py
