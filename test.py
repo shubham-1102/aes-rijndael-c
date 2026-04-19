@@ -93,3 +93,37 @@ def test_invert_sub_bytes():
     print(f"invert_sub_bytes: {passed}/3 passed\n")
 
 test_invert_sub_bytes()
+
+
+def py_shift_rows(block, nb):
+    state = list(block)
+    out = [0] * len(state)
+    for row in range(4):
+        for col in range(nb):
+            out[row * nb + col] = state[row * nb + (col + row) % nb]
+    return bytes(out)
+
+lib.shift_rows.argtypes = [ctypes.c_char_p, ctypes.c_int]
+lib.shift_rows.restype  = None
+
+def test_shift_rows():
+    print("Testing shift_rows...")
+    import random
+    passed = 0
+    for i in range(3):
+        data = bytes([random.randint(0,255) for _ in range(16)])
+        expected = py_shift_rows(data, 4)
+        buf = ctypes.create_string_buffer(data, 16)
+        lib.shift_rows(buf, AES_BLOCK_128)
+        result = bytes(buf)
+        if result == expected:
+            print(f"  Test {i+1}: PASSED ✓")
+            passed += 1
+        else:
+            print(f"  Test {i+1}: FAILED ✗")
+            print(f"    Input:    {list(data)}")
+            print(f"    Got:      {list(result)}")
+            print(f"    Expected: {list(expected)}")
+    print(f"shift_rows: {passed}/3 passed\n")
+
+test_shift_rows()

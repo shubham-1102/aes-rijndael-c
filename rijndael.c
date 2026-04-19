@@ -141,7 +141,20 @@ void sub_bytes(unsigned char *block, aes_block_size_t block_size) {
 }
 
 void shift_rows(unsigned char *block, aes_block_size_t block_size) {
-  // TODO: Implement me!
+      int cols = 0;
+    switch (block_size) {
+        case AES_BLOCK_128: cols = 4;  break;
+        case AES_BLOCK_256: cols = 8;  break;
+        case AES_BLOCK_512: cols = 16; break;
+        default: cols = 4;
+    }
+    unsigned char temp[16];
+    for (int row = 1; row < 4; row++) {
+        for (int col = 0; col < cols; col++)
+            temp[col] = block[row * cols + col];
+        for (int col = 0; col < cols; col++)
+            block[row * cols + col] = temp[(col + row) % cols];
+    }
 }
 
 void mix_columns(unsigned char *block, aes_block_size_t block_size) {
@@ -159,7 +172,7 @@ void invert_sub_bytes(unsigned char *block, aes_block_size_t block_size) {
 }
 
 void invert_shift_rows(unsigned char *block, aes_block_size_t block_size) {
-  // TODO: Implement me!
+  
 }
 
 void invert_mix_columns(unsigned char *block, aes_block_size_t block_size) {
